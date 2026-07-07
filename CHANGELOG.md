@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-07
+
 ### Added
 - Initial release: run each CWL `CommandLineTool` step on an ephemeral EC2
   instance via spore-host/spawn, with truffle auto-sizing from the step's
@@ -22,5 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drift-guard test suite pinning the cwltool internal seam (`CommandLineJob.run`,
   `make_job_runner`, `builder.resources` cores/ram) — fails loudly if a cwltool
   bump moves it.
+- Verified end-to-end on real AWS: `examples/hello.cwl` ran on a spawned EC2
+  instance (auto-sized, S3-bridged), cwltool collected the output and reported
+  success, and the instance self-terminated (leak-checked clean).
 
-[Unreleased]: https://github.com/spore-host/cwl-spawn/commits/main
+[Unreleased]: https://github.com/spore-host/cwl-spawn/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/spore-host/cwl-spawn/releases/tag/v0.1.0
