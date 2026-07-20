@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **cwl-spawn now dispatches each step through `spawn task run`** instead of
+  orchestrating the launch itself (spawn#386 adapter migration). It builds a
+  spawn **TaskSpec** and runs `spawn task run --spec … --wait -o json`, then reads
+  the **CompletionRecord** back. spawn now owns instance sizing (truffle), the S3
+  staging, the container run (Docker install + `docker run` for a
+  `DockerRequirement` image), the durable completion record, and the instance IAM
+  profile — so cwl-spawn no longer reimplements any of it. The step's
+  stdin/stdout/stderr redirects and cwd are preserved by wrapping the command in
+  `bash -lc 'cd <workdir> && …'`.
+- **Instance IAM is now least-privilege.** Previously the step instance got
+  `--iam-policy s3:FullAccess`; spawn now attaches a scoped profile granting
+  exactly the input/output/results buckets the task touches.
+
+### Removed
+- Bundled launch/staging/completion/sizing machinery (`launch.py`,
+  `staging.py`, `completion.py`, `sizing.py`) — spawn owns these now.
+- The `spawn:instanceType` hint no longer pins an **exact** instance type; it now
+  maps to a truffle **family allow-list** (e.g. `c7i.4xlarge` → the `c7i` family)
+  and spawn's sizer picks the cheapest fit within it. (Exact-pin support is
+  tracked as a spawn TaskSpec follow-up.)
+- `truffle` is no longer required on `PATH` (spawn sizes the instance itself);
+  `spawn` and `aws` are still required.
+
 ## [0.1.0] - 2026-07-07
 
 ### Added

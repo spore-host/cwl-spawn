@@ -1,7 +1,8 @@
 """Offline seam smoke test: run examples/hello.cwl through cwltool with the
-cwl-spawn factory, faking the spawn/aws/truffle subprocesses, and assert that
+cwl-spawn factory, faking the spawn/aws subprocesses, and assert that
 (a) a SpawnJob was constructed for the CommandLineTool step, and (b) the step was
-dispatched via `spawn launch` (not run locally). No AWS, no real instance.
+dispatched via `spawn task run` (not `spawn launch`, not run locally). No AWS, no
+real instance.
 """
 
 import os
@@ -31,10 +32,11 @@ def test_make_spawn_tool_returns_spawn_tool_for_commandlinetool():
 )
 def test_hello_cwl_dispatches_via_spawn(monkeypatch, tmp_path):
     """End-to-end through cwltool, but every external command is faked. Proves the
-    step reaches SpawnJob.run and issues `spawn launch`, and that a faked
-    .exitcode=0 drives it to a success callback."""
+    step reaches SpawnJob.run and dispatches via `spawn task run` (one-shot
+    --wait -o json), and that a faked CompletionRecord (exit_code 0) drives it to
+    a success callback with the declared output collected."""
     calls: list[list[str]] = []
-    launched = {"spawn": False}
+    dispatched = {"task_run": False}
 
     class FakeCompleted:
         def __init__(self, rc=0, out=""):
@@ -45,28 +47,31 @@ def test_hello_cwl_dispatches_via_spawn(monkeypatch, tmp_path):
     def fake_run(argv, check=False, capture_output=False, text=False, **kw):
         calls.append(list(argv))
         prog = argv[0]
-        sub = argv[1] if len(argv) > 1 else ""
-        if prog == "spawn" and sub == "launch":
-            launched["spawn"] = True
-            return FakeCompleted(0)
-        if prog == "aws" and argv[1:3] == ["s3", "cp"] and argv[3].endswith(".exitcode"):
-            # the exitcode probe: object exists, contents "0"
-            return FakeCompleted(0, "0\n")
-        if prog == "aws" and argv[1:3] == ["s3", "sync"] and argv[3].endswith("/work"):
-            # fake the results pull: the sync destination (argv[4]) is the job's
-            # outdir; create the declared stdout output there so cwltool's output
-            # collection (glob greeting.txt) succeeds.
+        # `spawn task run --spec … --wait -o json` → emit a CompletionRecord.
+        if prog == "spawn" and argv[1:3] == ["task", "run"]:
+            dispatched["task_run"] = True
+            return FakeCompleted(
+                0,
+                '{"task_id":"cwl-hello","exit_code":0,"state":"completed",'
+                '"started_at":"2026-07-19T00:00:00Z","ended_at":"2026-07-19T00:00:05Z"}',
+            )
+        # It must NOT use the old low-level `spawn launch`.
+        if prog == "spawn" and argv[1:2] == ["launch"]:
+            raise AssertionError("cwl-spawn must dispatch via `spawn task run`, not `spawn launch`")
+        if prog == "aws" and argv[1:3] == ["s3", "sync"]:
+            # Results pull: dest (argv[4]) is the job outdir; seed the declared
+            # stdout output so cwltool's collection (glob greeting.txt) succeeds.
             dest = argv[4]
             if os.path.isdir(dest):
                 with open(os.path.join(dest, "greeting.txt"), "w") as gf:
                     gf.write("hello, spore\n")
             return FakeCompleted(0, "")
-        # every other aws/spawn/truffle call: succeed quietly
+        # every other aws/spawn call: succeed quietly
         return FakeCompleted(0, "")
 
-    # Patch the subprocess the job uses (job._run_argv) + sizing/truffle.
+    # Patch the subprocess the job uses + the PATH checks (aws + spawn present).
     monkeypatch.setattr(job_mod.subprocess, "run", fake_run)
-    monkeypatch.setattr(job_mod.shutil, "which", lambda _p: "/usr/bin/aws")
+    monkeypatch.setattr(job_mod.shutil, "which", lambda _p: f"/usr/bin/{_p}")
     monkeypatch.setenv("SPAWN_WORKDIR_S3", "s3://throwaway/cwl-runs")
     monkeypatch.setenv("SPAWN_REGION", "us-east-1")
     monkeypatch.setenv("SPAWN_POLL_INTERVAL", "0")
@@ -90,5 +95,5 @@ def test_hello_cwl_dispatches_via_spawn(monkeypatch, tmp_path):
         runtimeContext=rc,
     )
 
-    assert launched["spawn"], f"spawn launch was never invoked; calls={calls[:5]}"
+    assert dispatched["task_run"], f"`spawn task run` was never invoked; calls={calls[:5]}"
     assert exit_code == 0
