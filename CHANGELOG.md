@@ -31,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `truffle` is no longer required on `PATH` (spawn sizes the instance itself);
   `spawn` and `aws` are still required.
 
+### Fixed
+- **Steps no longer fail with a "Permission denied" job-dir error.** The on-instance
+  work dir moved from `/mnt/cwl_spawn_job/work` to `/var/tmp/cwl_spawn_job/work`.
+  spawn runs the task command as the instance's unprivileged login user, which
+  cannot `mkdir` under the root-owned `/mnt`; `/var/tmp` is world-writable and
+  disk-backed (not tmpfs). Without this, no output file was ever written and
+  cwltool reported the step's output missing.
+
 ## [0.1.0] - 2026-07-07
 
 ### Added
