@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-19
+
 ### Changed
 - **cwl-spawn now dispatches each step through `spawn task run`** instead of
   orchestrating the launch itself (spawn#386 adapter migration). It builds a
@@ -60,5 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instance (auto-sized, S3-bridged), cwltool collected the output and reported
   success, and the instance self-terminated (leak-checked clean).
 
-[Unreleased]: https://github.com/spore-host/cwl-spawn/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/spore-host/cwl-spawn/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/spore-host/cwl-spawn/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/spore-host/cwl-spawn/releases/tag/v0.1.0
