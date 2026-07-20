@@ -35,11 +35,18 @@ plus AWS credentials, for real runs.
 - `tool.py` — `make_spawn_tool` (a cwltool `construct_tool_object` hook) +
   `SpawnCommandLineTool(CommandLineTool)` overriding `make_job_runner`.
 - `job.py` — `SpawnJob(CommandLineJob)` overriding `run()`: the cwltool-facing
-  adapter that dispatches one step to a spawn instance.
+  adapter that dispatches one step via `spawn task run`. Thin subprocess calls
+  only; the logic lives in the pure modules below.
 - `cli.py` — the `cwl-spawn` console script; drives cwltool as a library with the
   custom `construct_tool_object`.
-- `launch.py` / `transfer.py` / `completion.py` / `sizing.py` / `staging.py` —
-  **pure** helpers (no I/O), unit-tested. Keep new logic here, not in job.py.
+- `taskspec.py` — **pure**: builds the spawn TaskSpec dict from a step's cwltool
+  fields (command+redirects → `bash -lc`, DockerRequirement → container,
+  cores/ram → resources, S3↔local manifests) and parses the CompletionRecord.
+  Keep new logic here, not in job.py.
+- `transfer.py` — **pure**: the `aws s3 sync` argv that bridge cwltool's local
+  outdir ↔ the S3 work prefix `spawn task run` stages from.
+- spawn owns launch/sizing/staging/container/completion/IAM (via `spawn task
+  run`), so cwl-spawn no longer has launch/staging/completion/sizing modules.
 
 ## cwltool coupling — pin + drift-guard
 
@@ -64,8 +71,9 @@ adapter always launches with `--on-complete terminate` and a TTL.
 
 ## Reuse / lineage
 
-Mirrors `miniwdl-spawn`'s proven design (same `spawn` CLI contract, same
-`.exitcode`-in-S3 completion, same truffle auto-sizing). `launch.py`,
-`transfer.py`, `completion.py` are ported ~verbatim; `sizing.py` reads CWL's
-`ram` (MiB) instead of WDL's memory string. When in doubt, check how
-`miniwdl-spawn` solved it.
+cwl-spawn targets the **spawn task-execution protocol** (`spawn task run` +
+TaskSpec/CompletionRecord, spawn#386) — spawn owns sizing/staging/container/
+completion/IAM. This is the reference port; the other adapters (nf-spawn,
+miniwdl-spawn, snakemake, spawn-airflow) migrate to the same `spawn task run`
+contract. The only cwl-specific logic left here is the cwltool seam (job.py) and
+the CWL→TaskSpec mapping (taskspec.py).
