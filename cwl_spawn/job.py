@@ -42,8 +42,14 @@ _NAME_SANITIZE = re.compile(r"[^a-z0-9-]+")
 # The on-instance work dir the staged tree is mounted at. spawn bind-mounts the
 # parent of each manifest path into the container, and identity-mounts it, so the
 # command's cwd (set via `cd` in the wrapped bash -lc) resolves the same on the
-# host and inside a DockerRequirement image. Not /tmp (tmpfs/RAM on AL2023).
-_JOB_DIR = "/mnt/cwl_spawn_job/work"
+# host and inside a DockerRequirement image.
+#
+# Must live under a dir the *unprivileged* command user can create: spawn runs the
+# task command as the instance's login user (`su - <user>`), not root, so the
+# wrapper's `mkdir -p` runs unprivileged. `/var/tmp` is world-writable (1777) and
+# disk-backed on the EBS root volume — unlike `/tmp` (can be tmpfs/RAM) and unlike
+# root-owned dirs such as `/mnt` (0755 root, mkdir → Permission denied).
+_JOB_DIR = "/var/tmp/cwl_spawn_job/work"
 
 
 def _cfg(name: str, default: str) -> str:

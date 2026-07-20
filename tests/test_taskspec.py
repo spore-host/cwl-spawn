@@ -73,7 +73,7 @@ def _spec(**over):
         stderr=None,
         environment={"FOO": "bar"},
         work_s3_uri="s3://wd/echo/try-1/work",
-        job_dir="/mnt/cwl_spawn_job/work",
+        job_dir="/var/tmp/cwl_spawn_job/work",
         ttl="4h",
     )
     base.update(over)
@@ -86,7 +86,7 @@ def test_command_wrapped_in_bash_lc_with_cd():
     assert cmd[0] == "/bin/bash" and cmd[1] == "-lc"
     # cd into the job dir (shlex.quote leaves a plain path bare), then the
     # redirect-bearing inner command.
-    assert cmd[2] == "cd /mnt/cwl_spawn_job/work && echo hi > greeting.txt"
+    assert cmd[2] == "cd /var/tmp/cwl_spawn_job/work && echo hi > greeting.txt"
 
 
 def test_host_run_has_no_container_key():
@@ -102,11 +102,11 @@ def test_container_key_set_when_image_given():
 def test_manifests_identity_mount_with_recursive_slashes():
     spec = _spec()
     assert spec["inputs"] == [
-        {"source": "s3://wd/echo/try-1/work/", "destination": "/mnt/cwl_spawn_job/work"}
+        {"source": "s3://wd/echo/try-1/work/", "destination": "/var/tmp/cwl_spawn_job/work"}
     ]
     # output source is the job dir with a trailing slash → spawn syncs the tree back.
     assert spec["outputs"] == [
-        {"source": "/mnt/cwl_spawn_job/work/", "destination": "s3://wd/echo/try-1/work/"}
+        {"source": "/var/tmp/cwl_spawn_job/work/", "destination": "s3://wd/echo/try-1/work/"}
     ]
 
 
