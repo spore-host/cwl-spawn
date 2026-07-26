@@ -74,6 +74,6 @@ adapter always launches with `--on-complete terminate` and a TTL.
 cwl-spawn targets the **spawn task-execution protocol** (`spawn task run` +
 TaskSpec/CompletionRecord, spawn#386) — spawn owns sizing/staging/container/
 completion/IAM. This is the reference port; the other adapters (nf-spawn,
-miniwdl-spawn, snakemake, spawn-airflow) migrate to the same `spawn task run`
+miniwdl-spawn, snakemake, airflow-spawn) migrate to the same `spawn task run`
 contract. The only cwl-specific logic left here is the cwltool seam (job.py) and
 the CWL→TaskSpec mapping (taskspec.py).
