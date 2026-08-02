@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **CI was red on `main` and `ruff` is now capped `<0.16`.** ruff 0.16 moved a
+  large set of opinionated rules (`BLE`, `PLW`, `TRY`, `C408`, `EXE`, `B017`,
+  `UP035`, …) into its **default** rule set, and the dev extra asked only for
+  `ruff>=0.5` — so `ruff check .` adopted 31 new violations the moment ruff
+  published, in code that hadn't been touched. Same cap as `airflow-spawn`,
+  `miniwdl-spawn` and `snakemake-executor-plugin-spawn`. Adopting those rules
+  should be a deliberate change via an explicit `[tool.ruff.lint] select`, not
+  something a ruff release does to us. (`mypy` and the 31 tests were already
+  passing — the lint step aborts the job before them, so nothing else was hidden.)
+
 ## [0.2.0] - 2026-07-19
 
 ### Changed
