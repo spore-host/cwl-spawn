@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **A pin's version comment can no longer silently misstate what CI runs.**
+  `tests/test_ci_hygiene.py` required only that *some* `# vN` comment be present,
+  never that it was true. A wrong label is worse than a missing one: it makes a
+  major-version jump read as a routine same-line bump. Not hypothetical —
+  Dependabot bumped nf-spawn's `checkout` pin to a **v7.0.1** SHA while leaving the
+  comment reading `# v6`, and the identical regex passed it. Two complementary
+  halves now, because neither alone suffices: the test requires an exact `vX.Y.Z`
+  (offline, hermetic — catches vague labels), and a new `scripts/verify-pins.sh`
+  resolves each SHA against the tag its comment claims and fails if they disagree
+  (needs the network, so it runs as its own CI step — catches exact-but-false
+  labels the offline half cannot see). Both `checkout` comments relabelled `# v7`
+  → `# v7.0.1`, since the tag `v7` had moved off the pinned commit.
+
 ### Security
 - **Added Dependabot, so the SHA-pinned actions actually get bumped**
   ([#6](https://github.com/spore-host/cwl-spawn/issues/6)). All 5 `uses:` refs were already pinned to commit SHAs — which
