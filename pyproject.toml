@@ -16,7 +16,7 @@ keywords = ["cwl", "cwltool", "bioinformatics", "aws", "ec2", "workflow", "spawn
 # cwltool versions by date with no semver contract. A drift-guard test fails
 # loudly if a bump moves the seam. See CLAUDE.md.
 dependencies = [
-    "cwltool==3.2.20260413085819",
+    "cwltool==3.2.20260720092025",
 ]
 
 [project.optional-dependencies]
