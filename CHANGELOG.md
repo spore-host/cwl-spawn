@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- CI workflow to publish `cwl-spawn` to PyPI on a `python-vX.Y.Z` tag, via
+  PyPI Trusted Publishing (OIDC, no stored API token) in a dedicated `pypi`
+  GitHub environment — the same mechanism `python-sdk` already uses. The
+  existing `vX.Y.Z`-triggered `release.yml` (GitHub Release only) is
+  unchanged; a PyPI publish is now a separate, deliberate tag.
+
 ### Fixed
 - **A pin's version comment can no longer silently misstate what CI runs.**
   `tests/test_ci_hygiene.py` required only that *some* `# vN` comment be present,
