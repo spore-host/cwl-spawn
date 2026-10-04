@@ -57,6 +57,28 @@ def _cfg(name: str, default: str) -> str:
     return val if val else default
 
 
+def _cost_limit_cfg() -> Optional[float]:
+    """SPAWN_COST_LIMIT as a float, or None for "bounded by TTL only" (#12).
+
+    A bad value degrades with a warning rather than raising: it arrives as an
+    environment string, and a typo should not take down a workflow that is
+    otherwise fine. Non-positive is treated as unset too — a zero cap would mean
+    "terminate immediately", never what someone typing 0 intends.
+    """
+    raw = os.environ.get("SPAWN_COST_LIMIT")
+    if not raw:
+        return None
+    try:
+        v = float(raw)
+    except ValueError:
+        logger.warning(
+            "cwl-spawn: ignoring non-numeric SPAWN_COST_LIMIT %r; "
+            "steps will be bounded by TTL only", raw
+        )
+        return None
+    return v if v > 0 else None
+
+
 class SpawnJob(CommandLineJob):
     """Run one CWL CommandLineTool step on an ephemeral EC2 instance via spawn."""
 
@@ -90,6 +112,7 @@ class SpawnJob(CommandLineJob):
 
         region = _cfg("SPAWN_REGION", "us-east-1")
         ttl = _cfg("SPAWN_TTL", "4h")
+        cost_limit = _cost_limit_cfg()
         poll = float(_cfg("SPAWN_POLL_INTERVAL", "15"))
         run_id = self._run_id()
         task_id = ("cwl-" + run_id).replace("_", "-")[:60]
@@ -121,6 +144,7 @@ class SpawnJob(CommandLineJob):
             instance_hint=self._instance_hint(),
             ttl=ttl,
             on_complete="terminate",
+            cost_limit=cost_limit,
         )
         with tempfile.NamedTemporaryFile(
             "w", suffix=".json", prefix=f"cwl-spawn-{task_id}-", delete=False

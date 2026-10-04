@@ -86,6 +86,24 @@ def clean_env(environment: Optional[Mapping[str, str]]) -> dict:
     return {k: str(v) for k, v in environment.items() if _ENV_KEY_RE.match(k)}
 
 
+def _lifecycle(ttl: str, on_complete: str, cost_limit: Optional[float]) -> dict:
+    """The lifecycle block, with cost_limit included only when set (#12).
+
+    TTL bounds a step in TIME, not money, and spored enforces the two
+    INDEPENDENTLY — first limit to fire wins — so a cost cap is a genuine second
+    belt. Without it the only ceiling is the TTL, defaulting to 4h, so a workflow
+    running N steps has a worst case of N x 4h x the instance rate.
+
+    The failure it catches is a step that HANGS rather than fails: it produces no
+    error for cwltool to retry or abort on, so it bills until the TTL expires.
+    Omitted when unset so spawn's own default still applies.
+    """
+    lifecycle: dict = {"ttl": ttl, "on_complete": on_complete}
+    if cost_limit is not None and float(cost_limit) > 0:
+        lifecycle["cost_limit"] = float(cost_limit)
+    return lifecycle
+
+
 def build_task_spec(
     *,
     task_id: str,
@@ -103,6 +121,7 @@ def build_task_spec(
     instance_hint: Optional[str] = None,
     ttl: str = "4h",
     on_complete: str = "terminate",
+    cost_limit: Optional[float] = None,
 ) -> dict:
     """Build the TaskSpec dict for one CWL step. Pure.
 
@@ -138,7 +157,7 @@ def build_task_spec(
         "resources": resources,
         "inputs": [{"source": work_src, "destination": job_work}],
         "outputs": [{"source": job_work + "/", "destination": work_src}],
-        "lifecycle": {"ttl": ttl, "on_complete": on_complete},
+        "lifecycle": _lifecycle(ttl, on_complete, cost_limit),
     }
     if docker_image.strip():
         spec["container"] = docker_image.strip()

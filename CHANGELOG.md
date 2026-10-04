@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **A per-step spend cap: `lifecycle.cost_limit`** (#12), via `SPAWN_COST_LIMIT`. TTL was
+  the only ceiling on a step, defaulting to 4h, so a workflow running N steps had a worst
+  case of N × 4h × the instance rate with no second belt. `spored` enforces TTL and cost
+  **independently** — first limit to fire wins — so this is a genuine second limit.
+  The failure it catches is a step that **hangs** rather than fails: it produces no error
+  for cwltool to retry or abort on, so it bills until the TTL expires. Emitted only when
+  set, so omitting it leaves spawn's default behaviour unchanged. A non-numeric value
+  degrades to "bounded by TTL only" with a warning rather than failing the run.
+  (`--cost-limit` became a compute **+ storage** total in spawn 0.116.0.)
+
+### Added
 - CI workflow to publish `cwl-spawn` to PyPI on a `python-vX.Y.Z` tag, via
   PyPI Trusted Publishing (OIDC, no stored API token) in a dedicated `pypi`
   GitHub environment — the same mechanism `python-sdk` already uses. The
