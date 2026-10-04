@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-04
+
 ### Added
 - **A per-step spend cap: `lifecycle.cost_limit`** (#12), via `SPAWN_COST_LIMIT`. TTL was
   the only ceiling on a step, defaulting to 4h, so a workflow running N steps had a worst
