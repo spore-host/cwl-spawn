@@ -6,8 +6,8 @@ analog of [nf-spawn](https://github.com/spore-host/nf-spawn) (Nextflow) and
 [miniwdl-spawn](https://github.com/spore-host/miniwdl-spawn) (WDL). Part of the
 spore.host suite.
 
-Each step is auto-sized from its CWL `ResourceRequirement` (via `truffle`),
-launched with a TTL and `--on-complete terminate`, its inputs/outputs bridged
+Each step is auto-sized from its CWL `ResourceRequirement` (spawn picks the
+cheapest instance that fits), launched with a TTL and `--on-complete terminate`, its inputs/outputs bridged
 through S3, and torn down when it finishes — so a workflow costs only the compute
 each step actually uses, with no forgotten instances.
 
@@ -17,8 +17,9 @@ each step actually uses, with no forgotten instances.
 pip install cwl-spawn
 ```
 
-Requires the `spawn` and `truffle` CLIs on `PATH` and AWS credentials for real
-runs.
+Requires the `spawn` and `aws` CLIs on `PATH` and AWS credentials for real runs.
+spawn sizes instances with its built-in truffle, so no separate `truffle` CLI is
+needed.
 
 ## Use
 
@@ -36,19 +37,19 @@ behavior (parsing, scheduling, output collection) is unchanged.
 
 ### Sizing
 
-A step's EC2 instance type is chosen by, in order:
-1. an explicit `spawn:instanceType` hint on the step,
-2. the cheapest instance that fits the step's `ResourceRequirement`
-   (`coresMin`/`ramMin`) via `truffle search --pick-first`,
-3. a default (`t3.medium`).
+spawn sizes each step: it picks the cheapest instance that fits the step's
+`ResourceRequirement` (`coresMin`/`ramMin`). A `spawn:instanceType` hint on the
+step steers the instance *family* (`c7i.4xlarge` → the `c7i` family), and spawn
+picks the cheapest fit within it. It does not pin the exact size.
 
 ## How it works
 
-Mirrors the proven miniwdl-spawn / nf-spawn design: the step's command + working
-directory are staged to `SPAWN_WORKDIR_S3`, the instance runs the command, writes
-results and a final `.exitcode` object back to S3 (the durable completion signal
-that outlives the self-terminating instance), and cwltool collects the outputs
-from the pulled-back working directory.
+cwl-spawn uploads the step's working directory to `SPAWN_WORKDIR_S3`, builds a
+spawn TaskSpec, and runs `spawn task run --spec … --wait -o json`. spawn launches
+the instance, stages the inputs, runs the command, copies the working directory
+back to S3, and writes a durable completion record that outlives the
+self-terminating instance. cwl-spawn reads the exit code from that record, pulls
+the working directory back, and cwltool collects the outputs from it.
 
 ## License
 
