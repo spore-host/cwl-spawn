@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- **The README describes the `spawn task run` design** (spore-host/spore-host#585). It
+  no longer says sizing uses `truffle search --pick-first` with a `t3.medium` default, that
+  completion is a `.exitcode` object in S3, or that the `truffle` CLI is required. cwl-spawn
+  checks for `spawn` and `aws` on `PATH`, and spawn sizes the instance itself. The
+  `spawn:instanceType` hint steers the family; it doesn't pin the size.
+
 ## [0.3.0] - 2026-10-04
 
 ### Added

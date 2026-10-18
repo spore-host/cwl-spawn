@@ -23,7 +23,7 @@ Follows **[Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html)** and
 
 ## Build & test
 
-Python package (3.10+). Needs the `spawn` and `truffle` CLIs on PATH at runtime,
+Python package (3.10+). Needs the `spawn` and `aws` CLIs on PATH at runtime,
 plus AWS credentials, for real runs.
 
 - `pip install -e ".[dev]"` — install with dev deps
